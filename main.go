@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -34,6 +35,8 @@ const (
 	upperCaseÎ = 'Î'
 	lowerCaseÛ = 'û'
 	upperCaseÛ = 'Û'
+	lowerCaseÂ = 'â'
+	upperCaseÂ = 'Â'
 
 	lowerCaseE = 'e'
 	upperCaseE = 'E'
@@ -45,7 +48,7 @@ const (
 	upperCaseI = 'I'
 )
 
-var equivalent = map[rune]rune{
+var equivalents = map[rune]rune{
 	lowerCaseÉ: lowerCaseE,
 	upperCaseÉ: upperCaseE,
 	lowerCaseÈ: lowerCaseE,
@@ -57,9 +60,11 @@ var equivalent = map[rune]rune{
 	lowerCaseÊ: lowerCaseE,
 	upperCaseÊ: upperCaseE,
 	lowerCaseÎ: lowerCaseI,
-	upperCaseÎ: lowerCaseI,
+	upperCaseÎ: upperCaseI,
 	lowerCaseÛ: lowerCaseU,
 	upperCaseÛ: upperCaseU,
+	lowerCaseÂ: lowerCaseA,
+	upperCaseÂ: upperCaseA,
 }
 
 func swap(r, lowerLimit, upperLimit rune, offset int32) rune {
@@ -77,7 +82,7 @@ func swap(r, lowerLimit, upperLimit rune, offset int32) rune {
 }
 
 func swapRune(r rune, offset int32) rune {
-	e, ok := equivalent[r]
+	e, ok := equivalents[r]
 	if ok {
 		r = e
 	}
@@ -102,16 +107,22 @@ func swapRune(r rune, offset int32) rune {
 	return r
 }
 
+// Walks the current dir in search of markdown files that respect the pattern
 func main() {
+	if len(os.Args) == 1 {
+		log.Fatal("This program needs a file pattern (regex not supported)")
+	}
+
+	pattern := os.Args[1]
+
 	err := filepath.WalkDir("./", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// NOTE: À activer une fois le programme 100% fonctionnel
-		// if !strings.Contains(d.Name(), "ntrée") {
-		// 	return nil
-		// }
+		if !strings.Contains(d.Name(), pattern) || strings.Contains(d.Name(), "Codex") {
+			return nil
+		}
 
 		if d.IsDir() || filepath.Ext(d.Name()) != ".md" || strings.Contains(d.Name(), "Codex") {
 			return nil
@@ -148,9 +159,6 @@ func main() {
 func encryptFile(file io.Reader) ([]byte, error) {
 	scanner := bufio.NewScanner(file)
 
-	// NOTE: Inside my files, there will be lines that start with ==ROT n
-	// with n a number. This number will be used to offset letters found inside
-	// the file
 	r := regexp.MustCompile(`(==ROT (-?(\d*)))`)
 
 	var offset int
@@ -173,7 +181,6 @@ func encryptFile(file io.Reader) ([]byte, error) {
 			continue
 		}
 
-		// If
 		if r.MatchString(line) {
 			submatches := r.FindStringSubmatch(line)
 			offset, err = strconv.Atoi(submatches[len(submatches)-2])
