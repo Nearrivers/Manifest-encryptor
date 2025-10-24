@@ -120,11 +120,7 @@ func main() {
 			return err
 		}
 
-		if !strings.Contains(d.Name(), pattern) || strings.Contains(d.Name(), "Codex") {
-			return nil
-		}
-
-		if d.IsDir() || filepath.Ext(d.Name()) != ".md" || strings.Contains(d.Name(), "Codex") {
+		if !strings.Contains(d.Name(), pattern) || d.IsDir() || filepath.Ext(d.Name()) != ".md" {
 			return nil
 		}
 
@@ -133,12 +129,20 @@ func main() {
 			return err
 		}
 
-		encryptedCodex, err := encryptFile(file)
+		// If pattern == "Codex", then the program will decrypt its own output
+		// This is achieved by inverting the offset everytime
+		isReverse := pattern == "Codex"
+
+		encryptedCodex, err := encryptFile(file, isReverse)
 		if err != nil {
 			return err
 		}
 
-		f, err := os.Create(fmt.Sprintf("Codex %s", filepath.Base(d.Name())))
+		fileName := "Codex"
+		if isReverse {
+			fileName = "Origine"
+		}
+		f, err := os.Create(fmt.Sprintf("%s %s", fileName, filepath.Base(d.Name())))
 		if err != nil {
 			return err
 		}
@@ -156,7 +160,7 @@ func main() {
 	}
 }
 
-func encryptFile(file io.Reader) ([]byte, error) {
+func encryptFile(file io.Reader, isReverse bool) ([]byte, error) {
 	scanner := bufio.NewScanner(file)
 
 	r := regexp.MustCompile(`(==ROT (-?(\d*)))`)
@@ -186,6 +190,10 @@ func encryptFile(file io.Reader) ([]byte, error) {
 			offset, err = strconv.Atoi(submatches[len(submatches)-2])
 			if err != nil {
 				return []byte{}, err
+			}
+
+			if isReverse {
+				offset *= -1
 			}
 
 			encryptedCodex = append(encryptedCodex, []byte(line)...)

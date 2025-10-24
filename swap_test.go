@@ -174,7 +174,7 @@ Fcjjm umpjb` + "\n",
 
 	for _, tt := range cases {
 		t.Run(tt.description, func(t *testing.T) {
-			encryption, err := encryptFile(strings.NewReader(tt.fileContent))
+			encryption, err := encryptOrDecryptFile(strings.NewReader(tt.fileContent))
 			if err != nil {
 				t.Errorf("got error %v, but didn't expect one", err)
 			}
