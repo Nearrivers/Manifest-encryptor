@@ -13,24 +13,36 @@ import (
 )
 
 const (
-	lowerCaseA = 97
-	lowerCaseZ = 122
-	upperCaseA = 65
-	upperCaseZ = 90
+	lowerCaseA = 'a'
+	lowerCaseZ = 'z'
+	upperCaseA = 'A'
+	upperCaseZ = 'Z'
 
-	lowerCaseÉ = 233
-	upperCaseÉ = 201
-	lowerCaseÀ = 224
-	upperCaseÀ = 192
-	lowerCaseÇ = 231
-	upperCaseÇ = 199
-	lowerCaseÈ = 232
-	upperCaseÈ = 200
+	lowerCaseÉ = 'é'
+	upperCaseÉ = 'É'
+	lowerCaseÀ = 'à'
+	upperCaseÀ = 'À'
+	lowerCaseÇ = 'ç'
+	upperCaseÇ = 'Ç'
+	lowerCaseÈ = 'è'
+	upperCaseÈ = 'È'
 
-	lowerCaseE = 101
-	upperCaseE = 69
-	lowerCaseC = 99
-	upperCaseC = 67
+	// Fuck le passé simple
+	lowerCaseÊ = 'ê'
+	upperCaseÊ = 'Ê'
+	lowerCaseÎ = 'î'
+	upperCaseÎ = 'Î'
+	lowerCaseÛ = 'û'
+	upperCaseÛ = 'Û'
+
+	lowerCaseE = 'e'
+	upperCaseE = 'E'
+	lowerCaseC = 'c'
+	upperCaseC = 'C'
+	lowerCaseU = 'u'
+	upperCaseU = 'U'
+	lowerCaseI = 'i'
+	upperCaseI = 'I'
 )
 
 var equivalent = map[rune]rune{
@@ -42,30 +54,26 @@ var equivalent = map[rune]rune{
 	upperCaseÀ: upperCaseA,
 	lowerCaseÇ: lowerCaseC,
 	upperCaseÇ: upperCaseC,
+	lowerCaseÊ: lowerCaseE,
+	upperCaseÊ: upperCaseE,
+	lowerCaseÎ: lowerCaseI,
+	upperCaseÎ: lowerCaseI,
+	lowerCaseÛ: lowerCaseU,
+	upperCaseÛ: upperCaseU,
 }
 
-// TODO: Les -1 ne fonctionnent toujours pas (alors que les -20 oui ?)
 func swap(r, lowerLimit, upperLimit rune, offset int32) rune {
 	newLetter := r + offset
 
-	var remainder int32
-	if offset < 0 {
-		remainder = lowerLimit % newLetter
-	} else {
-		remainder = newLetter % upperLimit
+	if offset < 0 && newLetter < lowerLimit {
+		return upperLimit - (lowerLimit - newLetter - 1)
 	}
 
-	if remainder < newLetter && remainder != 0 {
-		if offset > 0 {
-			r = lowerLimit + remainder - 1
-		} else {
-			r = upperLimit - (remainder - 1)
-		}
-
-		return r
+	if offset > 0 && newLetter > upperLimit {
+		return lowerLimit + (newLetter - upperLimit - 1)
 	}
 
-	return r + offset
+	return newLetter
 }
 
 func swapRune(r rune, offset int32) rune {
@@ -188,8 +196,6 @@ func encryptFile(file io.Reader) ([]byte, error) {
 	if err = scanner.Err(); err != nil {
 		return []byte{}, err
 	}
-
-	fmt.Println(string(encryptedCodex))
 
 	return encryptedCodex, nil
 }
