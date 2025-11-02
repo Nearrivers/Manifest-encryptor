@@ -27,6 +27,12 @@ const (
 	upperCaseÇ = 'Ç'
 	lowerCaseÈ = 'è'
 	upperCaseÈ = 'È'
+	lowerCaseÙ = 'ù'
+	upperCaseÙ = 'Ù'
+	lowerCaseË = 'ë'
+	upperCaseË = 'Ë'
+	lowerCaseÏ = 'ï'
+	upperCaseÏ = 'Ï'
 
 	// Fuck le passé simple
 	lowerCaseÊ = 'ê'
@@ -65,6 +71,12 @@ var equivalents = map[rune]rune{
 	upperCaseÛ: upperCaseU,
 	lowerCaseÂ: lowerCaseA,
 	upperCaseÂ: upperCaseA,
+	lowerCaseÙ: lowerCaseU,
+	upperCaseÙ: lowerCaseU,
+	lowerCaseË: lowerCaseE,
+	upperCaseË: upperCaseE,
+	lowerCaseÏ: lowerCaseI,
+	upperCaseÏ: upperCaseI,
 }
 
 func swap(r, lowerLimit, upperLimit rune, offset int32) rune {
@@ -82,18 +94,21 @@ func swap(r, lowerLimit, upperLimit rune, offset int32) rune {
 }
 
 func swapRune(r rune, offset int32) rune {
+	if offset == 0 || offset%26 == 0 {
+		return r
+	}
+
+	if offset > 26 {
+		offset = offset % 26
+	}
+
+	if offset > 26 {
+		offset = (offset % 26) * -1
+	}
+
 	e, ok := equivalents[r]
 	if ok {
 		r = e
-	}
-
-	switch {
-	case offset == 0:
-		return r
-	case offset > 26:
-		offset = offset % 26
-	case offset < -26:
-		offset = (offset % 26) * -1
 	}
 
 	if r >= upperCaseA && r <= upperCaseZ {
@@ -147,7 +162,7 @@ func main() {
 			return err
 		}
 
-		_, err = f.Write(encryptedCodex)
+		_, err = f.WriteString(encryptedCodex)
 		if err != nil {
 			return err
 		}
@@ -160,7 +175,7 @@ func main() {
 	}
 }
 
-func encryptFile(file io.Reader, isReverse bool) ([]byte, error) {
+func encryptFile(file io.Reader, isReverse bool) (string, error) {
 	scanner := bufio.NewScanner(file)
 
 	r := regexp.MustCompile(`(==ROT (-?(\d*)))`)
@@ -168,20 +183,20 @@ func encryptFile(file io.Reader, isReverse bool) ([]byte, error) {
 	var offset int
 	var err error
 
-	encryptedCodex := make([]byte, 0)
+	builder := strings.Builder{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		if len(line) == 0 {
-			encryptedCodex = append(encryptedCodex, byte('\n'))
+			builder.WriteString("\n")
 			continue
 		}
 
 		// We skip quotes lines
 		if line[0] == '>' {
-			encryptedCodex = append(encryptedCodex, []byte(line)...)
-			encryptedCodex = append(encryptedCodex, byte('\n'))
+			builder.WriteString(line)
+			builder.WriteString("\n")
 			continue
 		}
 
@@ -189,28 +204,28 @@ func encryptFile(file io.Reader, isReverse bool) ([]byte, error) {
 			submatches := r.FindStringSubmatch(line)
 			offset, err = strconv.Atoi(submatches[len(submatches)-2])
 			if err != nil {
-				return []byte{}, err
+				return "", err
 			}
 
 			if isReverse {
 				offset *= -1
 			}
 
-			encryptedCodex = append(encryptedCodex, []byte(line)...)
-			encryptedCodex = append(encryptedCodex, byte('\n'))
+			builder.WriteString(line)
+			builder.WriteString("\n")
 			continue
 		}
 
 		for _, char := range line {
-			encryptedCodex = append(encryptedCodex, byte(swapRune(char, int32(offset))))
+			builder.WriteRune(swapRune(char, int32(offset)))
 		}
 
-		encryptedCodex = append(encryptedCodex, byte('\n'))
+		builder.WriteString("\n")
 	}
 
 	if err = scanner.Err(); err != nil {
-		return []byte{}, err
+		return "", err
 	}
 
-	return encryptedCodex, nil
+	return builder.String(), nil
 }

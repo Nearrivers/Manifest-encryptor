@@ -170,11 +170,22 @@ Hello world`,
 Fcjjm umpjb` + "\n",
 			description: "Other typical exemple of a file. Offsets letters by 2 to the left",
 		},
+		{
+			fileContent: `
+==ROT 0
+
+J'écris ces lignes pour ne pas oublier. Je sais que les évènements récents auront un impact sur ma vie et peut être sur l'humanité. J'écrirai tout ce que je trouve et je laisserai tout ce qui est nécessaire`,
+			expectedFileContent: `
+==ROT 0
+
+J'écris ces lignes pour ne pas oublier. Je sais que les évènements récents auront un impact sur ma vie et peut être sur l'humanité. J'écrirai tout ce que je trouve et je laisserai tout ce qui est nécessaire` + "\n",
+			description: "Test words with accents.",
+		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.description, func(t *testing.T) {
-			encryption, err := encryptOrDecryptFile(strings.NewReader(tt.fileContent))
+			encryption, err := encryptFile(strings.NewReader(tt.fileContent), false)
 			if err != nil {
 				t.Errorf("got error %v, but didn't expect one", err)
 			}
